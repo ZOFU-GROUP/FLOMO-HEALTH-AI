@@ -1,5 +1,4 @@
-// Kimi K2 via NVIDIA NIM (OpenAI-compatible).
-// Modular: swap baseURL/model/key by passing a different provider config.
+// Lovable AI Gateway (OpenAI-compatible). Default model: google/gemini-3-flash-preview.
 export type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
 
 export interface KimiOptions {
@@ -11,16 +10,16 @@ export interface KimiOptions {
 }
 
 export async function kimiChat(messages: ChatMsg[], opts: KimiOptions = {}): Promise<string> {
-  const apiKey = opts.apiKey ?? process.env.KIMI_API_KEY;
-  if (!apiKey) throw new Error("KIMI_API_KEY is not configured");
-  const baseURL = opts.baseURL ?? "https://integrate.api.nvidia.com/v1";
-  const model = opts.model ?? "moonshotai/kimi-k2-instruct";
+  const apiKey = opts.apiKey ?? process.env.LOVABLE_API_KEY;
+  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+  const baseURL = opts.baseURL ?? "https://ai.gateway.lovable.dev/v1";
+  const model = opts.model ?? "google/gemini-3-flash-preview";
 
   const res = await fetch(`${baseURL}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      "Lovable-API-Key": apiKey,
       Accept: "application/json",
     },
     body: JSON.stringify({
@@ -34,13 +33,16 @@ export async function kimiChat(messages: ChatMsg[], opts: KimiOptions = {}): Pro
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Kimi API ${res.status}: ${text.slice(0, 400)}`);
+    if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
+    if (res.status === 402) throw new Error("AI credits exhausted. Please add credits in your workspace.");
+    throw new Error(`AI Gateway ${res.status}: ${text.slice(0, 400)}`);
   }
   const json = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
   };
   return json.choices?.[0]?.message?.content?.trim() ?? "";
 }
+
 
 export function buildHealthSystemPrompt(profile: {
   full_name?: string | null;
