@@ -42,7 +42,11 @@ function Tracking() {
     blood_sugar: "", bp_systolic: "", bp_diastolic: "", mood: "", stress_level: "",
   });
 
-  const fromLog = (k: keyof typeof form) => (form[k] !== "" ? form[k] : (log?.[k as keyof typeof log] ?? "") as string | number);
+  const fromLog = (k: keyof typeof form) => {
+    if (form[k] !== "") return form[k];
+    const v = log ? (log as Record<string, unknown>)[k] : undefined;
+    return (v ?? "") as string | number;
+  };
 
   const save = async () => {
     const { data: { user } } = await supabase.auth.getUser();

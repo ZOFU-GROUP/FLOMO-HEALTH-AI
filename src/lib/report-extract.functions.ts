@@ -27,21 +27,22 @@ export const extractReport = createServerFn({ method: "POST" })
       { role: "user", content: data.notes },
     ], { temperature: 0.2, max_tokens: 1200 });
 
-    let parsed: unknown = null;
+    type Extracted = { summary?: string; labs?: unknown[]; recommendations?: unknown[] };
+    let parsed: Extracted;
     try {
       const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/gm, "").trim();
-      parsed = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned) as Extracted;
     } catch {
       parsed = { summary: raw, labs: [], recommendations: [] };
     }
 
-    const summary = (parsed as { summary?: string }).summary ?? "";
+    const summary = parsed.summary ?? "";
     const { error } = await supabase
       .from("medical_reports")
-      .update({ ai_summary: summary, extracted: parsed as object, status: "ready" })
+      .update({ ai_summary: summary, extracted: parsed as Record<string, unknown>, status: "ready" })
       .eq("id", data.report_id)
       .eq("user_id", userId);
     if (error) throw new Error(error.message);
 
-    return { ok: true, extracted: parsed };
+    return { ok: true, extracted: parsed as Record<string, unknown> };
   });

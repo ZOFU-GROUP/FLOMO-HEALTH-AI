@@ -25,29 +25,24 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       { role: "user", content: prompt },
     ], { temperature: 0.5, max_tokens: 1800 });
 
-    let plan: unknown;
+    type PlanJson = Record<string, unknown>;
+    let plan: PlanJson;
     try {
       const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/gm, "").trim();
-      plan = JSON.parse(cleaned);
+      plan = JSON.parse(cleaned) as PlanJson;
     } catch {
       throw new Error("AI returned an invalid plan. Please try again.");
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const { error } = await supabase
-      .from("meal_plans")
-      .upsert({ user_id: userId, plan_date: today, plan: plan as object }, { onConflict: "id" });
-    if (error) console.error(error);
-
-    // Insert the new meal plan as a row (no unique by date — just newest wins).
     const { data: inserted, error: insErr } = await supabase
       .from("meal_plans")
-      .insert({ user_id: userId, plan_date: today, plan: plan as object })
+      .insert({ user_id: userId, plan_date: today, plan })
       .select()
       .single();
     if (insErr) console.error(insErr);
 
-    return { plan, id: inserted?.id };
+    return { plan: plan as Record<string, unknown>, id: inserted?.id ?? null };
   });
 
 export const addPlanToGrocery = createServerFn({ method: "POST" })
