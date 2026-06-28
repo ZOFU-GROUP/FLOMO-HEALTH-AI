@@ -14,11 +14,14 @@ export const generateMealPlan = createServerFn({ method: "POST" })
 
     const sys = buildHealthSystemPrompt(profile ?? {}, meds ?? []);
     const prompt = [
-      "Generate a one-day Indian-friendly meal plan tailored to the user's conditions, goals, allergies, and preferences.",
+      "Generate a one-day Indian-friendly meal plan tailored to the user's conditions, goals, allergies and preferences.",
+      "Every meal MUST visibly respect the user's chronic conditions (low-GI for diabetes, low-sodium for hypertension, heart-friendly fats for cholesterol, etc.).",
       "Respond as STRICT JSON only (no fences) matching:",
       "{ totals: { calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };",
-      "  meals: { name: 'Breakfast'|'Mid-morning'|'Lunch'|'Snack'|'Dinner'; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[] }[];",
-      "  grocery: { name: string; quantity: string; category: 'Produce'|'Pantry'|'Dairy'|'Protein'|'Spices'|'Other' }[] }",
+      "  meals: { name: 'Breakfast'|'Mid-morning'|'Lunch'|'Snack'|'Dinner'; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[]; condition_notes: string }[];",
+      "  grocery: { name: string; quantity: string; category: 'Produce'|'Pantry'|'Dairy'|'Protein'|'Spices'|'Other'; necessary: boolean }[] }",
+      "condition_notes: one short sentence (max 18 words) explaining WHY this meal fits the user's specific conditions/goals.",
+      "necessary: true only when the item is required to cook this plan AND is not a basic pantry staple (salt, oil, common spices, water). Mark staples as false.",
     ].join("\n");
 
     const raw = await kimiChat([
