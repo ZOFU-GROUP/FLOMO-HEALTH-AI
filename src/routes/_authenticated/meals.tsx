@@ -26,6 +26,7 @@ function Meals() {
   const gen = useServerFn(generateMealPlan);
   const addAll = useServerFn(addPlanToGrocery);
   const [loading, setLoading] = useState(false);
+  const [showAllGrocery, setShowAllGrocery] = useState(false);
 
   const { data: latest } = useQuery({
     queryKey: ["meal_plan_latest"],
