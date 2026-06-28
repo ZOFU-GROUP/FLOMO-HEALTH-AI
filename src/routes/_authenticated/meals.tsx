@@ -13,11 +13,12 @@ export const Route = createFileRoute("/_authenticated/meals")({
   component: Meals,
 });
 
-type Meal = { name: string; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[] };
+type Meal = { name: string; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[]; condition_notes?: string };
+type GroceryItem = { name: string; quantity: string; category: string; necessary?: boolean };
 type Plan = {
   totals: { calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };
   meals: Meal[];
-  grocery: { name: string; quantity: string; category: string }[];
+  grocery: GroceryItem[];
 };
 
 function Meals() {
