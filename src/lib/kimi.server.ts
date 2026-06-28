@@ -62,6 +62,19 @@ export function buildHealthSystemPrompt(profile: {
   const bmi = profile.height_cm && profile.weight_kg
     ? Number((profile.weight_kg / Math.pow(profile.height_cm / 100, 2)).toFixed(1))
     : null;
+  const conditions = (profile.chronic_conditions ?? []).filter(Boolean);
+  const conditionRules: string[] = [];
+  const has = (k: string) => conditions.some(c => c.toLowerCase().includes(k));
+  if (has("diabet")) conditionRules.push("Diabetes: low-GI carbs (oats, millets, legumes), 25–35g fiber/day, lean protein with each meal, avoid sugar/refined carbs, prefer whole fruits over juice.");
+  if (has("hypertens") || has("blood pressure")) conditionRules.push("Hypertension: DASH-style, sodium under 1500mg/day, lots of potassium-rich produce (banana, spinach, beans), limit processed/pickled foods.");
+  if (has("cholesterol") || has("heart") || has("cardio")) conditionRules.push("Heart/cholesterol: emphasize omega-3 (walnuts, flax, fish), soluble fiber (oats, beans), olive/mustard oil, minimize saturated fat and fried food.");
+  if (has("pcos")) conditionRules.push("PCOS: low-GI, anti-inflammatory; spread carbs across meals; include chia/flax, leafy greens, protein at breakfast; limit dairy if symptomatic.");
+  if (has("thyroid")) conditionRules.push("Thyroid: adequate iodine and selenium (brazil nuts), avoid excess raw cruciferous; for hypothyroid keep consistent meal timing.");
+  if (has("ckd") || has("kidney")) conditionRules.push("CKD: moderate protein, low sodium/phosphorus/potassium; avoid bananas/oranges/tomatoes/nuts in excess.");
+  if (has("ibs") || has("gerd")) conditionRules.push("IBS/GERD: low-FODMAP-friendly, smaller frequent meals, avoid spicy/fried/caffeine, no late dinners.");
+  if (has("anemia")) conditionRules.push("Anemia: iron-rich (ragi, dates, jaggery, leafy greens) + vitamin C pairing; avoid tea/coffee with meals.");
+  if (has("fatty liver")) conditionRules.push("Fatty liver: weight-loss caloric deficit, low refined carbs/sugar, no alcohol, coffee OK.");
+
   const lines = [
     "You are Flomo, a warm, premium AI health and nutrition coach.",
     "You give personalized, practical, evidence-based guidance, in a calm, encouraging tone.",
@@ -78,8 +91,12 @@ export function buildHealthSystemPrompt(profile: {
     `- Dietary preferences: ${(profile.dietary_preferences ?? []).join(", ") || "None"}`,
     `- Allergies: ${(profile.allergies ?? []).join(", ") || "None"}`,
     `- Health goals: ${(profile.health_goals ?? []).join(", ") || "None"}`,
-    `- Chronic conditions: ${(profile.chronic_conditions ?? []).join(", ") || "None"}`,
+    `- Chronic conditions: ${conditions.join(", ") || "None"}`,
     `- Current medications: ${medications.map(m => `${m.name}${m.dosage ? " " + m.dosage : ""}${m.frequency ? " (" + m.frequency + ")" : ""}`).join("; ") || "None"}`,
+    "",
+    "CONDITION-SPECIFIC NUTRITION RULES (apply strictly when generating plans or advice):",
+    ...(conditionRules.length ? conditionRules.map(r => `- ${r}`) : ["- No chronic conditions on file; follow general balanced-diet principles."]),
+    "Never suggest foods the user is allergic to or that conflict with their dietary preferences.",
   ];
   return lines.join("\n");
 }
