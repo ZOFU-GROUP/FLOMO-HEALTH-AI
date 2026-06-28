@@ -54,7 +54,9 @@ function Meals() {
 
   const pushGrocery = async () => {
     if (!plan?.grocery?.length) return;
-    const { inserted } = await addAll({ data: { items: plan.grocery } });
+    const items = showAllGrocery ? plan.grocery : plan.grocery.filter(g => g.necessary !== false);
+    if (!items.length) { toast.info("Nothing essential to add."); return; }
+    const { inserted } = await addAll({ data: { items } });
     toast.success(`${inserted} items added to grocery`);
   };
 
