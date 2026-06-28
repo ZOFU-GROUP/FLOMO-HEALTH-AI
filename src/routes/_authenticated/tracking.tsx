@@ -1,17 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Pill, Trash2 } from "lucide-react";
+import { Footprints, Minus, Pill, Play, Plus, Square, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useStepCounter } from "@/hooks/use-step-counter";
+import { ConditionsEditor } from "@/components/conditions-editor";
 
 export const Route = createFileRoute("/_authenticated/tracking")({
   component: Tracking,
 });
+
+const CUP_ML = 240;
 
 function Tracking() {
   const qc = useQueryClient();
@@ -37,32 +41,75 @@ function Tracking() {
     },
   });
 
+  // ----- Auto step counter -----
+  const baseline = log?.steps ?? 0;
+  const { steps, status, start, stop, setSteps } = useStepCounter(baseline);
+  useEffect(() => { setSteps(baseline); }, [baseline, setSteps]);
+
+  const saveSteps = async (count: number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("health_logs").upsert(
+      { user_id: user.id, log_date: today, steps: count },
+      { onConflict: "user_id,log_date" },
+    );
+    qc.invalidateQueries({ queryKey: ["health_log", today] });
+  };
+
+  // Persist steps every 30s while running.
+  const lastSavedRef = useRef(steps);
+  useEffect(() => {
+    if (status !== "running") return;
+    const id = setInterval(() => {
+      if (steps !== lastSavedRef.current) {
+        lastSavedRef.current = steps;
+        saveSteps(steps);
+      }
+    }, 30000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, steps]);
+
+  const handleStop = async () => {
+    stop();
+    await saveSteps(steps);
+    toast.success(`Saved ${steps} steps for today`);
+  };
+
+  // ----- Cups of water -----
+  const [cupsDelta, setCupsDelta] = useState(0);
+  const baseCups = Math.round((log?.water_ml ?? 0) / CUP_ML);
+  const cups = Math.max(0, baseCups + cupsDelta);
+  const saveCups = async (next: number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("health_logs").upsert(
+      { user_id: user.id, log_date: today, water_ml: next * CUP_ML },
+      { onConflict: "user_id,log_date" },
+    );
+    setCupsDelta(0);
+    qc.invalidateQueries({ queryKey: ["health_log", today] });
+  };
+
+  // ----- Other metrics form -----
   const [form, setForm] = useState({
-    steps: "", sleep_hours: "", water_ml: "", weight_kg: "",
+    sleep_hours: "", weight_kg: "",
     blood_sugar: "", bp_systolic: "", bp_diastolic: "", mood: "", stress_level: "",
   });
-
-  const fromLog = (k: keyof typeof form) => {
-    if (form[k] !== "") return form[k];
-    const v = log ? (log as Record<string, unknown>)[k] : undefined;
-    return (v ?? "") as string | number;
-  };
 
   const save = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const num = (v: string | number) => v === "" || v === null ? null : Number(v);
+    const num = (v: string | number | null | undefined) => v === "" || v === null || v === undefined ? null : Number(v);
     const payload = {
       user_id: user.id, log_date: today,
-      steps: num(fromLog("steps")),
-      sleep_hours: num(fromLog("sleep_hours")),
-      water_ml: num(fromLog("water_ml")),
-      weight_kg: num(fromLog("weight_kg")),
-      blood_sugar: num(fromLog("blood_sugar")),
-      bp_systolic: num(fromLog("bp_systolic")),
-      bp_diastolic: num(fromLog("bp_diastolic")),
-      mood: (fromLog("mood") || null) as string | null,
-      stress_level: num(fromLog("stress_level")),
+      sleep_hours: num(form.sleep_hours || log?.sleep_hours),
+      weight_kg: num(form.weight_kg || log?.weight_kg),
+      blood_sugar: num(form.blood_sugar || log?.blood_sugar),
+      bp_systolic: num(form.bp_systolic || log?.bp_systolic),
+      bp_diastolic: num(form.bp_diastolic || log?.bp_diastolic),
+      mood: (form.mood || log?.mood || null) as string | null,
+      stress_level: num(form.stress_level || log?.stress_level),
     };
     const { error } = await supabase.from("health_logs").upsert(payload, { onConflict: "user_id,log_date" });
     if (error) { toast.error(error.message); return; }
@@ -70,6 +117,7 @@ function Tracking() {
     qc.invalidateQueries({ queryKey: ["health_log", today] });
   };
 
+  // ----- Medications -----
   const [med, setMed] = useState({ name: "", dosage: "", frequency: "", time_of_day: "" });
   const addMed = async () => {
     if (!med.name.trim()) return;
@@ -85,15 +133,72 @@ function Tracking() {
     qc.invalidateQueries({ queryKey: ["meds"] });
   };
 
+  const statusLabel: Record<typeof status, string> = {
+    idle: "Tap start to count steps automatically",
+    running: "Counting… keep your phone with you",
+    denied: "Motion permission denied — enable it in your browser settings",
+    unsupported: "Your device doesn't expose a motion sensor here",
+  };
+
   return (
     <AppShell>
       <h1 className="font-display text-3xl sm:text-4xl">Daily tracking</h1>
-      <p className="text-muted-foreground text-sm mt-1">Log today's metrics. Your dashboard score updates instantly.</p>
+      <p className="text-muted-foreground text-sm mt-1">Sensors and quick taps. Your dashboard score updates instantly.</p>
 
-      <div className="soft-card p-6 mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Field label="Steps" v={form.steps || (log?.steps ?? "")} onChange={v => setForm({ ...form, steps: v })} />
+      <div className="grid md:grid-cols-2 gap-4 mt-6">
+        {/* Step counter */}
+        <div className="soft-card p-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Footprints className="h-4 w-4 text-primary" /> Steps (auto)
+          </div>
+          <div className="mt-2 flex items-end gap-2">
+            <span className="font-display text-5xl">{steps}</span>
+            <span className="text-xs text-muted-foreground mb-2">today</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">{statusLabel[status]}</p>
+          <div className="mt-4 flex gap-2">
+            {status === "running" ? (
+              <Button onClick={handleStop} variant="outline" className="rounded-full">
+                <Square className="h-4 w-4 mr-2" /> Stop
+              </Button>
+            ) : (
+              <Button onClick={start} className="rounded-full" disabled={status === "unsupported"}>
+                <Play className="h-4 w-4 mr-2" /> Start
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Water in cups */}
+        <div className="soft-card p-6">
+          <div className="text-sm text-muted-foreground">Water (cups)</div>
+          <div className="mt-2 flex items-end gap-2">
+            <span className="font-display text-5xl">{cups}</span>
+            <span className="text-xs text-muted-foreground mb-2">{cups * CUP_ML} ml · target 8 cups</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {Array.from({ length: Math.max(8, cups) }).map((_, i) => (
+              <span key={i} className={`h-2.5 w-6 rounded-full ${i < cups ? "bg-primary" : "bg-muted"}`} />
+            ))}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button size="icon" variant="outline" className="rounded-full" onClick={() => setCupsDelta(d => d - 1)} disabled={cups === 0}>
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Button size="icon" className="rounded-full" onClick={() => setCupsDelta(d => d + 1)}>
+              <Plus className="h-4 w-4" />
+            </Button>
+            {cupsDelta !== 0 && (
+              <Button variant="secondary" className="rounded-full ml-auto" onClick={() => saveCups(cups)}>
+                Save {cups} cups
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="soft-card p-6 mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Field label="Sleep (hours)" v={form.sleep_hours || (log?.sleep_hours ?? "")} onChange={v => setForm({ ...form, sleep_hours: v })} />
-        <Field label="Water (ml)" v={form.water_ml || (log?.water_ml ?? "")} onChange={v => setForm({ ...form, water_ml: v })} />
         <Field label="Weight (kg)" v={form.weight_kg || (log?.weight_kg ?? "")} onChange={v => setForm({ ...form, weight_kg: v })} />
         <Field label="Blood sugar (mg/dL)" v={form.blood_sugar || (log?.blood_sugar ?? "")} onChange={v => setForm({ ...form, blood_sugar: v })} />
         <div className="grid grid-cols-2 gap-2">
@@ -114,6 +219,8 @@ function Tracking() {
       <div className="mt-4 flex justify-end">
         <Button onClick={save} className="rounded-full">Save today</Button>
       </div>
+
+      <ConditionsEditor />
 
       <h2 className="font-display text-2xl mt-10 flex items-center gap-2"><Pill className="h-5 w-5 text-primary" /> Medications</h2>
       <div className="soft-card p-5 mt-3 space-y-2">

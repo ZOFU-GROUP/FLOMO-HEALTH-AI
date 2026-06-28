@@ -91,7 +91,7 @@ function Dashboard() {
 
       <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4">
         <Stat icon={Footprints} label="Steps" value={todayLog?.steps ?? 0} unit="" />
-        <Stat icon={Droplets} label="Water" value={todayLog?.water_ml ?? 0} unit="ml" />
+        <Stat icon={Droplets} label="Water" value={Math.round((todayLog?.water_ml ?? 0) / 240)} unit="cups" />
         <Stat icon={Moon} label="Sleep" value={todayLog?.sleep_hours ?? 0} unit="h" />
         <Stat icon={Heart} label="BP" value={todayLog?.bp_systolic && todayLog?.bp_diastolic ? `${todayLog.bp_systolic}/${todayLog.bp_diastolic}` : "—"} unit="" />
       </div>

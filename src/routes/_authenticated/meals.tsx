@@ -13,11 +13,12 @@ export const Route = createFileRoute("/_authenticated/meals")({
   component: Meals,
 });
 
-type Meal = { name: string; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[] };
+type Meal = { name: string; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[]; condition_notes?: string };
+type GroceryItem = { name: string; quantity: string; category: string; necessary?: boolean };
 type Plan = {
   totals: { calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };
   meals: Meal[];
-  grocery: { name: string; quantity: string; category: string }[];
+  grocery: GroceryItem[];
 };
 
 function Meals() {
@@ -25,6 +26,7 @@ function Meals() {
   const gen = useServerFn(generateMealPlan);
   const addAll = useServerFn(addPlanToGrocery);
   const [loading, setLoading] = useState(false);
+  const [showAllGrocery, setShowAllGrocery] = useState(false);
 
   const { data: latest } = useQuery({
     queryKey: ["meal_plan_latest"],
@@ -52,7 +54,9 @@ function Meals() {
 
   const pushGrocery = async () => {
     if (!plan?.grocery?.length) return;
-    const { inserted } = await addAll({ data: { items: plan.grocery } });
+    const items = showAllGrocery ? plan.grocery : plan.grocery.filter(g => g.necessary !== false);
+    if (!items.length) { toast.info("Nothing essential to add."); return; }
+    const { inserted } = await addAll({ data: { items } });
     toast.success(`${inserted} items added to grocery`);
   };
 
@@ -117,28 +121,50 @@ function Meals() {
                     ))}
                   </div>
                 )}
+                {m.condition_notes && (
+                  <div className="mt-3 rounded-xl bg-secondary/40 px-3 py-2 text-xs text-secondary-foreground">
+                    <span className="font-medium">Why this works for you: </span>{m.condition_notes}
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
-          {plan.grocery?.length > 0 && (
-            <div className="soft-card p-6 mt-5">
-              <div className="flex justify-between items-center">
-                <h3 className="font-display text-xl">Grocery for this plan</h3>
-                <Button size="sm" onClick={pushGrocery} className="rounded-full">
-                  <ShoppingBasket className="h-4 w-4 mr-2" /> Add all
-                </Button>
+          {plan.grocery?.length > 0 && (() => {
+            const visible = showAllGrocery ? plan.grocery : plan.grocery.filter(g => g.necessary !== false);
+            const hiddenCount = plan.grocery.length - visible.length;
+            return (
+              <div className="soft-card p-6 mt-5">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <div>
+                    <h3 className="font-display text-xl">Grocery for this plan</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Showing {showAllGrocery ? "all items" : "only what you need to buy"}
+                      {!showAllGrocery && hiddenCount > 0 ? ` · ${hiddenCount} pantry staples hidden` : ""}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {hiddenCount > 0 && (
+                      <Button size="sm" variant="outline" onClick={() => setShowAllGrocery(v => !v)} className="rounded-full">
+                        {showAllGrocery ? "Hide staples" : "Show all"}
+                      </Button>
+                    )}
+                    <Button size="sm" onClick={pushGrocery} className="rounded-full">
+                      <ShoppingBasket className="h-4 w-4 mr-2" /> Add {showAllGrocery ? "all" : "essentials"}
+                    </Button>
+                  </div>
+                </div>
+                <ul className="mt-3 grid sm:grid-cols-2 gap-y-1 text-sm">
+                  {visible.map((g, i) => (
+                    <li key={i} className="flex justify-between gap-2 py-1 border-b border-border/40">
+                      <span>{g.name}</span>
+                      <span className="text-muted-foreground">{g.quantity}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="mt-3 grid sm:grid-cols-2 gap-y-1 text-sm">
-                {plan.grocery.map((g, i) => (
-                  <li key={i} className="flex justify-between gap-2 py-1 border-b border-border/40">
-                    <span>{g.name}</span>
-                    <span className="text-muted-foreground">{g.quantity}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            );
+          })()}
         </>
       )}
     </AppShell>
