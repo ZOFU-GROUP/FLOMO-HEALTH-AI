@@ -27,7 +27,7 @@ export const generateMealPlan = createServerFn({ method: "POST" })
     const raw = await kimiChat([
       { role: "system", content: sys },
       { role: "user", content: prompt },
-    ], { temperature: 0.5, max_tokens: 1800 });
+    ], { temperature: 0.5, max_tokens: 2400 });
 
     let plan: Json;
     try {
