@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
 export const generateMealPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -25,11 +26,10 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       { role: "user", content: prompt },
     ], { temperature: 0.5, max_tokens: 1800 });
 
-    type PlanJson = Record<string, unknown>;
-    let plan: PlanJson;
+    let plan: Json;
     try {
       const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/gm, "").trim();
-      plan = JSON.parse(cleaned) as PlanJson;
+      plan = JSON.parse(cleaned) as Json;
     } catch {
       throw new Error("AI returned an invalid plan. Please try again.");
     }
@@ -42,7 +42,7 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       .single();
     if (insErr) console.error(insErr);
 
-    return { plan: plan as Record<string, unknown>, id: inserted?.id ?? null };
+    return { plan, id: inserted?.id ?? null };
   });
 
 export const addPlanToGrocery = createServerFn({ method: "POST" })

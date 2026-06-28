@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 import { z } from "zod";
 
 const ExtractInput = z.object({
@@ -27,22 +28,23 @@ export const extractReport = createServerFn({ method: "POST" })
       { role: "user", content: data.notes },
     ], { temperature: 0.2, max_tokens: 1200 });
 
-    type Extracted = { summary?: string; labs?: unknown[]; recommendations?: unknown[] };
-    let parsed: Extracted;
+    let parsed: Json;
     try {
       const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/gm, "").trim();
-      parsed = JSON.parse(cleaned) as Extracted;
+      parsed = JSON.parse(cleaned) as Json;
     } catch {
-      parsed = { summary: raw, labs: [], recommendations: [] };
+      parsed = { summary: raw, labs: [], recommendations: [] } as Json;
     }
 
-    const summary = parsed.summary ?? "";
+    const summary = (parsed && typeof parsed === "object" && !Array.isArray(parsed) && typeof (parsed as { summary?: unknown }).summary === "string")
+      ? (parsed as { summary: string }).summary
+      : "";
     const { error } = await supabase
       .from("medical_reports")
-      .update({ ai_summary: summary, extracted: parsed as Record<string, unknown>, status: "ready" })
+      .update({ ai_summary: summary, extracted: parsed, status: "ready" })
       .eq("id", data.report_id)
       .eq("user_id", userId);
     if (error) throw new Error(error.message);
 
-    return { ok: true, extracted: parsed as Record<string, unknown> };
+    return { ok: true, extracted: parsed };
   });
