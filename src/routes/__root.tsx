@@ -82,6 +82,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Flomo Health AI — Your AI nutrition & wellness companion" },
       { name: "twitter:description", content: "Personalized nutrition, chronic-disease guidance, daily tracking and an AI health coach — built on your medical reality." },
+      { name: "theme-color", content: "#c2410c" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Flomo" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
