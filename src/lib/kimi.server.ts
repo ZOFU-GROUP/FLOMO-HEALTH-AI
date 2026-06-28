@@ -14,7 +14,7 @@ export async function kimiChat(messages: ChatMsg[], opts: KimiOptions = {}): Pro
   const apiKey = opts.apiKey ?? process.env.KIMI_API_KEY;
   if (!apiKey) throw new Error("KIMI_API_KEY is not configured");
   const baseURL = opts.baseURL ?? "https://integrate.api.nvidia.com/v1";
-  const model = opts.model ?? "moonshotai/kimi-k2-instruct-0905";
+  const model = opts.model ?? "moonshotai/kimi-k2-instruct";
 
   const res = await fetch(`${baseURL}/chat/completions`, {
     method: "POST",
