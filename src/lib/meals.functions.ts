@@ -7,27 +7,33 @@ export const generateMealPlan = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { kimiChat, buildHealthSystemPrompt } = await import("@/lib/kimi.server");
-    const [{ data: profile }, { data: meds }] = await Promise.all([
+    const [{ data: profile }, { data: meds }, { data: reports }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("medications").select("name,dosage,frequency").eq("user_id", userId).eq("active", true),
+      supabase.from("medical_reports").select("title,ai_summary,extracted").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(5),
     ]);
 
-    const sys = buildHealthSystemPrompt(profile ?? {}, meds ?? []);
+    const sys = buildHealthSystemPrompt(profile ?? {}, meds ?? [], reports ?? []);
+    const seed = Math.random().toString(36).slice(2, 8);
     const prompt = [
-      "Generate a one-day Indian-friendly meal plan tailored to the user's conditions, goals, allergies and preferences.",
-      "Every meal MUST visibly respect the user's chronic conditions (low-GI for diabetes, low-sodium for hypertension, heart-friendly fats for cholesterol, etc.).",
+      "Generate a one-day INDIAN meal plan tailored to this user's conditions, medications, reports, allergies, goals and (if present) women's-health phase.",
+      "Mix regions across the day (e.g. South Indian breakfast, Punjabi lunch, Gujarati/Bengali dinner) and pick everyday Indian dishes — no generic 'grilled chicken salad' style placeholders.",
+      `Variation seed: ${seed} — make today's plan visibly different from a previous one for this user (different dishes, grains, dals, vegetables).`,
+      "Every meal MUST visibly respect the user's chronic conditions, medications and any women's-health phase noted in the system prompt.",
       "Respond as STRICT JSON only (no fences) matching:",
       "{ totals: { calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };",
       "  meals: { name: 'Breakfast'|'Mid-morning'|'Lunch'|'Snack'|'Dinner'; title: string; description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; ingredients: string[]; condition_notes: string }[];",
       "  grocery: { name: string; quantity: string; category: 'Produce'|'Pantry'|'Dairy'|'Protein'|'Spices'|'Other'; necessary: boolean }[] }",
-      "condition_notes: one short sentence (max 18 words) explaining WHY this meal fits the user's specific conditions/goals.",
-      "necessary: true only when the item is required to cook this plan AND is not a basic pantry staple (salt, oil, common spices, water). Mark staples as false.",
+      "condition_notes: one short sentence (max 22 words) explaining WHY this dish fits this user's specific conditions / meds / cycle / pregnancy / reports.",
+      "necessary: true only when the item is required to cook this plan AND is not a basic pantry staple (salt, oil, common Indian spices, water). Mark staples as false.",
     ].join("\n");
 
     const raw = await kimiChat([
       { role: "system", content: sys },
       { role: "user", content: prompt },
-    ], { temperature: 0.5, max_tokens: 2400 });
+    ], { temperature: 0.8, max_tokens: 2400 });
+
 
     let plan: Json;
     let parsed: { grocery?: Array<{ name: string; quantity?: string; category?: string; necessary?: boolean }> } = {};

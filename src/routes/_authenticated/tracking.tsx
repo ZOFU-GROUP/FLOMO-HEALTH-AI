@@ -10,6 +10,7 @@ import { Footprints, Minus, Pill, Play, Plus, Square, Trash2 } from "lucide-reac
 import { toast } from "sonner";
 import { useStepCounter } from "@/hooks/use-step-counter";
 import { ConditionsEditor } from "@/components/conditions-editor";
+import { WomensHealthEditor } from "@/components/womens-health-editor";
 
 export const Route = createFileRoute("/_authenticated/tracking")({
   component: Tracking,
@@ -227,6 +228,7 @@ function Tracking() {
       </div>
 
       <ConditionsEditor />
+      <WomensHealthEditor />
 
       <h2 className="font-display text-2xl mt-10 flex items-center gap-2"><Pill className="h-5 w-5 text-primary" /> Medications</h2>
       <div className="soft-card p-5 mt-3 space-y-2">
