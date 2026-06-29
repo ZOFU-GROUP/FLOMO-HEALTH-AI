@@ -237,6 +237,7 @@ export type Database = {
           onboarded: boolean
           updated_at: string
           weight_kg: number | null
+          womens_health: Json | null
         }
         Insert: {
           activity_level?: string | null
@@ -253,6 +254,7 @@ export type Database = {
           onboarded?: boolean
           updated_at?: string
           weight_kg?: number | null
+          womens_health?: Json | null
         }
         Update: {
           activity_level?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           onboarded?: boolean
           updated_at?: string
           weight_kg?: number | null
+          womens_health?: Json | null
         }
         Relationships: []
       }
