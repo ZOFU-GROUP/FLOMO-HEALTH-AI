@@ -41,10 +41,16 @@ function Tracking() {
     },
   });
 
-  // ----- Auto step counter -----
+  // ----- Auto step counter (starts silently on mount; iOS still needs a tap for permission) -----
   const baseline = log?.steps ?? 0;
   const { steps, status, start, stop, setSteps } = useStepCounter(baseline);
   useEffect(() => { setSteps(baseline); }, [baseline, setSteps]);
+  useEffect(() => {
+    const DM = (typeof window !== "undefined" ? (DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> }) : null);
+    const needsTap = DM && typeof DM.requestPermission === "function";
+    if (!needsTap) { void start(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveSteps = async (count: number) => {
     const { data: { user } } = await supabase.auth.getUser();
