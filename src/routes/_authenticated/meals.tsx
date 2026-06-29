@@ -44,9 +44,11 @@ function Meals() {
   const generate = async () => {
     setLoading(true);
     try {
-      await gen({ data: undefined });
+      const res = await gen({ data: undefined });
       await qc.invalidateQueries({ queryKey: ["meal_plan_latest"] });
-      toast.success("Fresh plan ready");
+      await qc.invalidateQueries({ queryKey: ["grocery"] });
+      const added = (res as { groceryAdded?: number })?.groceryAdded ?? 0;
+      toast.success(added ? `Plan ready · ${added} items added to grocery` : "Fresh plan ready");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't generate plan");
     } finally { setLoading(false); }
@@ -56,7 +58,8 @@ function Meals() {
     if (!plan?.grocery?.length) return;
     const items = showAllGrocery ? plan.grocery : plan.grocery.filter(g => g.necessary !== false);
     if (!items.length) { toast.info("Nothing essential to add."); return; }
-    const { inserted } = await addAll({ data: { items } });
+    const { inserted } = await addAll({ data: items.map(i => ({ ...i, source: "plan" })) as never });
+    await qc.invalidateQueries({ queryKey: ["grocery"] });
     toast.success(`${inserted} items added to grocery`);
   };
 
