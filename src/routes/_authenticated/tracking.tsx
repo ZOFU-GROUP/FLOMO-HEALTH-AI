@@ -165,11 +165,11 @@ function Tracking() {
           <div className="mt-4 flex gap-2">
             {status === "running" ? (
               <Button onClick={handleStop} variant="outline" className="rounded-full">
-                <Square className="h-4 w-4 mr-2" /> Stop
+                <Square className="h-4 w-4 mr-2" /> Pause
               </Button>
             ) : (
               <Button onClick={start} className="rounded-full" disabled={status === "unsupported"}>
-                <Play className="h-4 w-4 mr-2" /> Start
+                <Play className="h-4 w-4 mr-2" /> Enable sensor
               </Button>
             )}
           </div>
