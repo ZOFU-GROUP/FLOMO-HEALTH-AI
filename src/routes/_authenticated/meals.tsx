@@ -58,7 +58,7 @@ function Meals() {
     if (!plan?.grocery?.length) return;
     const items = showAllGrocery ? plan.grocery : plan.grocery.filter(g => g.necessary !== false);
     if (!items.length) { toast.info("Nothing essential to add."); return; }
-    const { inserted } = await addAll({ data: items.map(i => ({ ...i, source: "plan" })) as never });
+    const { inserted } = await addAll({ data: { items } });
     await qc.invalidateQueries({ queryKey: ["grocery"] });
     toast.success(`${inserted} items added to grocery`);
   };
