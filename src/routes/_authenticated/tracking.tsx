@@ -41,10 +41,16 @@ function Tracking() {
     },
   });
 
-  // ----- Auto step counter -----
+  // ----- Auto step counter (starts silently on mount; iOS still needs a tap for permission) -----
   const baseline = log?.steps ?? 0;
   const { steps, status, start, stop, setSteps } = useStepCounter(baseline);
   useEffect(() => { setSteps(baseline); }, [baseline, setSteps]);
+  useEffect(() => {
+    const DM = (typeof window !== "undefined" ? (DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> }) : null);
+    const needsTap = DM && typeof DM.requestPermission === "function";
+    if (!needsTap) { void start(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveSteps = async (count: number) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -134,8 +140,8 @@ function Tracking() {
   };
 
   const statusLabel: Record<typeof status, string> = {
-    idle: "Tap start to count steps automatically",
-    running: "Counting… keep your phone with you",
+    idle: "Tap Enable to allow your phone's motion sensor",
+    running: "Auto-counting — keep your phone with you",
     denied: "Motion permission denied — enable it in your browser settings",
     unsupported: "Your device doesn't expose a motion sensor here",
   };
@@ -159,11 +165,11 @@ function Tracking() {
           <div className="mt-4 flex gap-2">
             {status === "running" ? (
               <Button onClick={handleStop} variant="outline" className="rounded-full">
-                <Square className="h-4 w-4 mr-2" /> Stop
+                <Square className="h-4 w-4 mr-2" /> Pause
               </Button>
             ) : (
               <Button onClick={start} className="rounded-full" disabled={status === "unsupported"}>
-                <Play className="h-4 w-4 mr-2" /> Start
+                <Play className="h-4 w-4 mr-2" /> Enable sensor
               </Button>
             )}
           </div>

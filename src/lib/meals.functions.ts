@@ -30,9 +30,11 @@ export const generateMealPlan = createServerFn({ method: "POST" })
     ], { temperature: 0.5, max_tokens: 2400 });
 
     let plan: Json;
+    let parsed: { grocery?: Array<{ name: string; quantity?: string; category?: string; necessary?: boolean }> } = {};
     try {
       const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/gm, "").trim();
-      plan = JSON.parse(cleaned) as Json;
+      parsed = JSON.parse(cleaned);
+      plan = parsed as Json;
     } catch {
       throw new Error("AI returned an invalid plan. Please try again.");
     }
@@ -45,7 +47,30 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       .single();
     if (insErr) console.error(insErr);
 
-    return { plan, id: inserted?.id ?? null };
+    // Daily grocery reset: clear any unchecked plan-sourced items from earlier,
+    // then auto-add the new plan's necessary groceries. Manual items are kept.
+    await supabase.from("grocery_items")
+      .delete()
+      .eq("user_id", userId)
+      .eq("source", "plan")
+      .eq("checked", false);
+
+    const necessary = (parsed.grocery ?? []).filter(g => g && g.name && g.necessary !== false);
+    if (necessary.length) {
+      const rows = necessary.slice(0, 100).map(g => ({
+        user_id: userId,
+        name: g.name.trim().slice(0, 120),
+        quantity: g.quantity?.slice(0, 60) ?? null,
+        category: (g.category ?? "Other").slice(0, 40),
+        checked: false,
+        source: "plan",
+        plan_date: today,
+      }));
+      const { error: gErr } = await supabase.from("grocery_items").insert(rows);
+      if (gErr) console.error("grocery insert", gErr);
+    }
+
+    return { plan, id: inserted?.id ?? null, groceryAdded: necessary.length };
   });
 
 export const addPlanToGrocery = createServerFn({ method: "POST" })
