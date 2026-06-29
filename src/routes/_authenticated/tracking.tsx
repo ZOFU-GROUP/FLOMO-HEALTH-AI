@@ -140,8 +140,8 @@ function Tracking() {
   };
 
   const statusLabel: Record<typeof status, string> = {
-    idle: "Tap start to count steps automatically",
-    running: "Counting… keep your phone with you",
+    idle: "Tap Enable to allow your phone's motion sensor",
+    running: "Auto-counting — keep your phone with you",
     denied: "Motion permission denied — enable it in your browser settings",
     unsupported: "Your device doesn't expose a motion sensor here",
   };
