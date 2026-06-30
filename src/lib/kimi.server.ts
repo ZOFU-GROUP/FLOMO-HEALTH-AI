@@ -146,6 +146,8 @@ export function buildHealthSystemPrompt(profile: {
     `- Gender: ${profile.gender ?? "Unknown"}`,
     `- Height: ${profile.height_cm ?? "?"} cm  Weight: ${profile.weight_kg ?? "?"} kg  BMI: ${bmi ?? "?"}`,
     `- Activity: ${profile.activity_level ?? "Unknown"}`,
+    `- Region / state: ${profile.region ?? "Unknown"} — cook in this region's everyday home style first (e.g. Tamil Nadu → sambhar, rasam, kootu, idli, pongal; Punjab → sarson-makki, chole, rajma-chawal, paratha; Bengal → mach-bhaat, shukto, cholar dal; Gujarat → thepla, dhokla, undhiyu; Maharashtra → poha, thalipeeth, amti; Kerala → appam-stew, avial, puttu-kadala; Andhra/Telangana → pulihora, gongura pappu; Karnataka → bisi bele bath, ragi mudde; Rajasthan → dal-baati, gatte; UP/Bihar → litti-chokha, kadhi-chawal; Odisha → dalma; Northeast → bamboo-shoot stews, axone; Goa → xacuti, fish curry-rice; Kashmir → haak, rajma-gucchi). Use 1–2 dishes from other regions for variety, not the whole plan.`,
+    `- Taste preference: ${profile.cuisine_taste ?? "Balanced"}`,
     `- Dietary preferences: ${(profile.dietary_preferences ?? []).join(", ") || "None"}`,
     `- Allergies: ${(profile.allergies ?? []).join(", ") || "None"}`,
     `- Health goals: ${(profile.health_goals ?? []).join(", ") || "None"}`,
@@ -156,6 +158,9 @@ export function buildHealthSystemPrompt(profile: {
     ...(conditionRules.length ? conditionRules.map(r => `- ${r}`) : ["- No chronic conditions on file; follow general balanced Indian-diet principles."]),
     ...(whLines.length ? ["", "WOMEN'S HEALTH CONTEXT:", ...whLines.map(l => `- ${l}`)] : []),
     ...(reportLines.length ? ["", "RECENT MEDICAL REPORTS (use these to tune the plan):", ...reportLines] : []),
+    ...(healthLogs.length ? ["", "RECENT DAILY TRACKING (last entries — learn the trend before planning):",
+      ...healthLogs.slice(0, 10).map(l => `- ${l.log_date ?? "?"}: steps ${l.steps ?? "-"}, sleep ${l.sleep_hours ?? "-"}h, water ${l.water_ml ?? "-"}ml, weight ${l.weight_kg ?? "-"}kg, BP ${l.bp_systolic ?? "-"}/${l.bp_diastolic ?? "-"}, sugar ${l.blood_sugar ?? "-"}, mood ${l.mood ?? "-"}, stress ${l.stress_level ?? "-"}`),
+      "Adapt today's plan to these patterns: low sleep → magnesium + complex carbs at dinner; low steps → lighter calories; high BP/sugar trend → tighten sodium/refined carbs further; low hydration → add buttermilk/jeera water/coconut water (if permitted)."] : []),
     "Never suggest foods the user is allergic to or that conflict with their dietary preferences.",
   ];
   return lines.join("\n");
