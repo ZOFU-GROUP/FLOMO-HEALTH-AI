@@ -227,6 +227,7 @@ export type Database = {
           allergies: string[] | null
           chronic_conditions: string[] | null
           created_at: string
+          cuisine_taste: string | null
           date_of_birth: string | null
           dietary_preferences: string[] | null
           full_name: string | null
@@ -235,6 +236,7 @@ export type Database = {
           height_cm: number | null
           id: string
           onboarded: boolean
+          region: string | null
           updated_at: string
           weight_kg: number | null
           womens_health: Json | null
@@ -244,6 +246,7 @@ export type Database = {
           allergies?: string[] | null
           chronic_conditions?: string[] | null
           created_at?: string
+          cuisine_taste?: string | null
           date_of_birth?: string | null
           dietary_preferences?: string[] | null
           full_name?: string | null
@@ -252,6 +255,7 @@ export type Database = {
           height_cm?: number | null
           id: string
           onboarded?: boolean
+          region?: string | null
           updated_at?: string
           weight_kg?: number | null
           womens_health?: Json | null
@@ -261,6 +265,7 @@ export type Database = {
           allergies?: string[] | null
           chronic_conditions?: string[] | null
           created_at?: string
+          cuisine_taste?: string | null
           date_of_birth?: string | null
           dietary_preferences?: string[] | null
           full_name?: string | null
@@ -269,6 +274,7 @@ export type Database = {
           height_cm?: number | null
           id?: string
           onboarded?: boolean
+          region?: string | null
           updated_at?: string
           weight_kg?: number | null
           womens_health?: Json | null
