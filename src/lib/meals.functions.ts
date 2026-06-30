@@ -7,14 +7,16 @@ export const generateMealPlan = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { kimiChat, buildHealthSystemPrompt } = await import("@/lib/kimi.server");
-    const [{ data: profile }, { data: meds }, { data: reports }] = await Promise.all([
+    const [{ data: profile }, { data: meds }, { data: reports }, { data: logs }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("medications").select("name,dosage,frequency").eq("user_id", userId).eq("active", true),
       supabase.from("medical_reports").select("title,ai_summary,extracted").eq("user_id", userId)
         .order("created_at", { ascending: false }).limit(5),
+      supabase.from("health_logs").select("log_date,steps,sleep_hours,water_ml,weight_kg,blood_sugar,bp_systolic,bp_diastolic,mood,stress_level")
+        .eq("user_id", userId).order("log_date", { ascending: false }).limit(10),
     ]);
 
-    const sys = buildHealthSystemPrompt(profile ?? {}, meds ?? [], reports ?? []);
+    const sys = buildHealthSystemPrompt(profile ?? {}, meds ?? [], reports ?? [], logs ?? []);
     const seed = Math.random().toString(36).slice(2, 8);
     const prompt = [
       "Generate a one-day INDIAN meal plan tailored to this user's conditions, medications, reports, allergies, goals and (if present) women's-health phase.",
