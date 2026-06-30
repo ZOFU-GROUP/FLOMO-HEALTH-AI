@@ -17,6 +17,8 @@ const CONDITIONS = ["Diabetes", "PCOS", "Hypertension", "Thyroid", "Fatty Liver"
 const GOALS = ["Lose weight", "Manage condition", "Build muscle", "More energy", "Better sleep", "Heart health", "Manage blood sugar"];
 const DIETS = ["Vegetarian", "Vegan", "Eggetarian", "Non-vegetarian", "Jain", "Gluten-free", "Low-carb"];
 const ACTIVITY = ["Sedentary", "Lightly active", "Moderately active", "Very active"];
+const REGIONS = ["Tamil Nadu","Kerala","Karnataka","Andhra Pradesh","Telangana","Maharashtra","Gujarat","Rajasthan","Punjab","Haryana","Delhi","Uttar Pradesh","Bihar","Jharkhand","West Bengal","Odisha","Madhya Pradesh","Chhattisgarh","Goa","Kashmir","Himachal Pradesh","Uttarakhand","Assam","Northeast","Other"];
+const TASTES = ["Mild","Medium spicy","Very spicy","Sweet-leaning","Tangy","Balanced"];
 
 function Onboarding() {
   const navigate = useNavigate();
