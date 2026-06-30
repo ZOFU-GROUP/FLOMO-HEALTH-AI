@@ -55,13 +55,12 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       .single();
     if (insErr) console.error(insErr);
 
-    // Daily grocery reset: clear any unchecked plan-sourced items from earlier,
-    // then auto-add the new plan's necessary groceries. Manual items are kept.
-    await supabase.from("grocery_items")
-      .delete()
-      .eq("user_id", userId)
-      .eq("source", "plan")
-      .eq("checked", false);
+    // Daily grocery reset: wipe ALL plan-sourced items from previous days,
+    // and any unchecked plan-sourced items from today. Manual items are kept.
+    await supabase.from("grocery_items").delete()
+      .eq("user_id", userId).eq("source", "plan").lt("plan_date", today);
+    await supabase.from("grocery_items").delete()
+      .eq("user_id", userId).eq("source", "plan").eq("checked", false);
 
     const necessary = (parsed.grocery ?? []).filter(g => g && g.name && g.necessary !== false);
     if (necessary.length) {
