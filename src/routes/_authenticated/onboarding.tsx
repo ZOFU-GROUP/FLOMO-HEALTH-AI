@@ -54,6 +54,8 @@ function Onboarding() {
         height_cm: profile.height_cm ? String(profile.height_cm) : "",
         weight_kg: profile.weight_kg ? String(profile.weight_kg) : "",
         activity_level: profile.activity_level ?? "Lightly active",
+        region: (profile as { region?: string | null }).region ?? "",
+        cuisine_taste: (profile as { cuisine_taste?: string | null }).cuisine_taste ?? "Balanced",
         chronic_conditions: profile.chronic_conditions ?? [],
         health_goals: profile.health_goals ?? [],
         dietary_preferences: profile.dietary_preferences ?? [],
