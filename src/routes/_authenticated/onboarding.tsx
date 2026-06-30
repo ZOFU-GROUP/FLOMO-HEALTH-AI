@@ -139,6 +139,24 @@ function Onboarding() {
                   </select>
                 </div>
               </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Region / state</Label>
+                  <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                          value={form.region} onChange={e => setForm({ ...form, region: e.target.value })}>
+                    <option value="">Select your region…</option>
+                    {REGIONS.map(r => <option key={r}>{r}</option>)}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">We'll plan meals in this region's home style.</p>
+                </div>
+                <div>
+                  <Label>Taste preference</Label>
+                  <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                          value={form.cuisine_taste} onChange={e => setForm({ ...form, cuisine_taste: e.target.value })}>
+                    {TASTES.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
             </>
           )}
 
