@@ -79,6 +79,8 @@ function Onboarding() {
       height_cm: form.height_cm ? Number(form.height_cm) : null,
       weight_kg: form.weight_kg ? Number(form.weight_kg) : null,
       activity_level: form.activity_level,
+      region: form.region || null,
+      cuisine_taste: form.cuisine_taste || null,
       chronic_conditions: form.chronic_conditions,
       health_goals: form.health_goals,
       dietary_preferences: form.dietary_preferences,
