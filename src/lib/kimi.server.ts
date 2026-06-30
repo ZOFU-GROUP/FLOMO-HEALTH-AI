@@ -56,8 +56,11 @@ export function buildHealthSystemPrompt(profile: {
   health_goals?: string[] | null;
   chronic_conditions?: string[] | null;
   womens_health?: unknown;
+  region?: string | null;
+  cuisine_taste?: string | null;
 }, medications: Array<{ name: string; dosage?: string | null; frequency?: string | null }> = [],
-   reports: Array<{ title?: string | null; ai_summary?: string | null; extracted?: unknown }> = []): string {
+   reports: Array<{ title?: string | null; ai_summary?: string | null; extracted?: unknown }> = [],
+   healthLogs: Array<{ log_date?: string | null; steps?: number | null; sleep_hours?: number | null; water_ml?: number | null; weight_kg?: number | null; blood_sugar?: number | null; bp_systolic?: number | null; bp_diastolic?: number | null; mood?: string | null; stress_level?: number | null }> = []): string {
   const age = profile.date_of_birth
     ? Math.floor((Date.now() - new Date(profile.date_of_birth).getTime()) / (365.25 * 24 * 3600 * 1000))
     : null;
