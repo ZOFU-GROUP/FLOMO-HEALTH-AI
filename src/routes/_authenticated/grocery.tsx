@@ -68,7 +68,7 @@ function Grocery() {
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-3xl sm:text-4xl">Grocery</h1>
-          <p className="text-muted-foreground text-sm mt-1">Tap any item to order it from your favourite quick-commerce app.</p>
+          <p className="text-muted-foreground text-sm mt-1">Tap any item to order it from your favourite quick-commerce app. Plan-sourced items reset daily — manual items stay.</p>
         </div>
       </div>
 

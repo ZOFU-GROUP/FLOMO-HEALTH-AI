@@ -17,6 +17,8 @@ const CONDITIONS = ["Diabetes", "PCOS", "Hypertension", "Thyroid", "Fatty Liver"
 const GOALS = ["Lose weight", "Manage condition", "Build muscle", "More energy", "Better sleep", "Heart health", "Manage blood sugar"];
 const DIETS = ["Vegetarian", "Vegan", "Eggetarian", "Non-vegetarian", "Jain", "Gluten-free", "Low-carb"];
 const ACTIVITY = ["Sedentary", "Lightly active", "Moderately active", "Very active"];
+const REGIONS = ["Tamil Nadu","Kerala","Karnataka","Andhra Pradesh","Telangana","Maharashtra","Gujarat","Rajasthan","Punjab","Haryana","Delhi","Uttar Pradesh","Bihar","Jharkhand","West Bengal","Odisha","Madhya Pradesh","Chhattisgarh","Goa","Kashmir","Himachal Pradesh","Uttarakhand","Assam","Northeast","Other"];
+const TASTES = ["Mild","Medium spicy","Very spicy","Sweet-leaning","Tangy","Balanced"];
 
 function Onboarding() {
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ function Onboarding() {
   const [form, setForm] = useState({
     full_name: "", date_of_birth: "", gender: "",
     height_cm: "", weight_kg: "", activity_level: "Lightly active",
+    region: "", cuisine_taste: "Balanced",
     chronic_conditions: [] as string[],
     health_goals: [] as string[],
     dietary_preferences: [] as string[],
@@ -51,6 +54,8 @@ function Onboarding() {
         height_cm: profile.height_cm ? String(profile.height_cm) : "",
         weight_kg: profile.weight_kg ? String(profile.weight_kg) : "",
         activity_level: profile.activity_level ?? "Lightly active",
+        region: (profile as { region?: string | null }).region ?? "",
+        cuisine_taste: (profile as { cuisine_taste?: string | null }).cuisine_taste ?? "Balanced",
         chronic_conditions: profile.chronic_conditions ?? [],
         health_goals: profile.health_goals ?? [],
         dietary_preferences: profile.dietary_preferences ?? [],
@@ -74,6 +79,8 @@ function Onboarding() {
       height_cm: form.height_cm ? Number(form.height_cm) : null,
       weight_kg: form.weight_kg ? Number(form.weight_kg) : null,
       activity_level: form.activity_level,
+      region: form.region || null,
+      cuisine_taste: form.cuisine_taste || null,
       chronic_conditions: form.chronic_conditions,
       health_goals: form.health_goals,
       dietary_preferences: form.dietary_preferences,
@@ -129,6 +136,24 @@ function Onboarding() {
                   <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                           value={form.activity_level} onChange={e => setForm({ ...form, activity_level: e.target.value })}>
                     {ACTIVITY.map(a => <option key={a}>{a}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Region / state</Label>
+                  <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                          value={form.region} onChange={e => setForm({ ...form, region: e.target.value })}>
+                    <option value="">Select your region…</option>
+                    {REGIONS.map(r => <option key={r}>{r}</option>)}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">We'll plan meals in this region's home style.</p>
+                </div>
+                <div>
+                  <Label>Taste preference</Label>
+                  <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                          value={form.cuisine_taste} onChange={e => setForm({ ...form, cuisine_taste: e.target.value })}>
+                    {TASTES.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
               </div>
