@@ -37,6 +37,7 @@ function Onboarding() {
   const [form, setForm] = useState({
     full_name: "", date_of_birth: "", gender: "",
     height_cm: "", weight_kg: "", activity_level: "Lightly active",
+    region: "", cuisine_taste: "Balanced",
     chronic_conditions: [] as string[],
     health_goals: [] as string[],
     dietary_preferences: [] as string[],
