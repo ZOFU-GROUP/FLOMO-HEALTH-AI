@@ -54,7 +54,7 @@ export function ConditionsEditor() {
   return (
     <>
       <h2 className="font-display text-2xl mt-10 flex items-center gap-2">
-        <HeartPulse className="h-5 w-5 text-primary" /> Chronic conditions
+        <HeartPulse className="h-5 w-5 text-primary" /> Chronic Conditions and Habits
       </h2>
       <p className="text-sm text-muted-foreground mt-1">
         Flomo uses these to personalize your meal plan and coach. Edit anytime.
