@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [
@@ -54,13 +54,6 @@ function AuthPage() {
     }
   };
 
-  const google = async () => {
-    setLoading(true);
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (r.error) { toast.error("Google sign-in failed"); setLoading(false); return; }
-    if (r.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
-  };
 
   return (
     <div className="min-h-screen warm-gradient flex items-center justify-center px-4 py-10">
@@ -75,14 +68,8 @@ function AuthPage() {
             {mode === "signin" ? "Sign in to continue your health journey." : "Start your personalized wellness journey."}
           </p>
 
-          <button onClick={google} disabled={loading}
-            className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted">
-            <GoogleIcon /> Continue with Google
-          </button>
 
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or email <div className="h-px flex-1 bg-border" />
-          </div>
+
 
           <form onSubmit={submit} className="space-y-3">
             {mode === "signup" && (
@@ -117,10 +104,3 @@ function AuthPage() {
   );
 }
 
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.4-1.6 4.2-5.5 4.2-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.9 14.6 3 12 3 6.9 3 2.8 7.1 2.8 12.2S6.9 21.4 12 21.4c6.9 0 9.5-4.8 9.5-7.3 0-.5 0-.9-.1-1.3H12z"/>
-    </svg>
-  );
-}
