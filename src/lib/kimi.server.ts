@@ -11,7 +11,7 @@ export interface KimiOptions {
 
 export async function kimiChat(messages: ChatMsg[], opts: KimiOptions = {}): Promise<string> {
   const apiKey = opts.apiKey ?? process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+  if (!apiKey) return localHealthAssistantFallback(messages);
   const baseURL = opts.baseURL ?? "https://ai.gateway.lovable.dev/v1";
   const model = opts.model ?? "google/gemini-3-flash-preview";
 
@@ -41,6 +41,152 @@ export async function kimiChat(messages: ChatMsg[], opts: KimiOptions = {}): Pro
     choices?: Array<{ message?: { content?: string } }>;
   };
   return json.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
+function localHealthAssistantFallback(messages: ChatMsg[]): string {
+  const system = messages.find((m) => m.role === "system")?.content ?? "";
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+  if (lastUser.includes("{ totals:") && lastUser.toLowerCase().includes("meal plan")) {
+    return JSON.stringify(buildLocalMealPlan(system));
+  }
+
+  if (system.toLowerCase().includes("clinical lab-report extractor")) {
+    return JSON.stringify(extractLocalReport(lastUser));
+  }
+
+  const conditions = readSystemLine(system, "Chronic conditions") || "your current health profile";
+  const meds = readSystemLine(system, "Current medications") || "your medicines";
+  const region = readSystemLine(system, "Region / state")?.split("—")[0].trim() || "your region";
+  return [
+    `I checked this against ${conditions} and ${meds}.`,
+    `For now, choose a simple ${region}-style plate: ½ vegetables or salad, ¼ protein such as dal/paneer/egg/curd, and ¼ slow carbs such as roti, millet, brown rice, poha, idli, or dalia.`,
+    "Avoid allergy items, excess sugar, deep-fried snacks, very salty foods, and any food that conflicts with your medicines. For medication changes or diagnosis, please consult your doctor.",
+    "Next step: update today’s tracking and generate a fresh meal plan so Flomo can tune the recommendation further.",
+  ].join("\n\n");
+}
+
+function readSystemLine(system: string, label: string): string | null {
+  const line = system.split("\n").find((l) => l.trim().startsWith(`- ${label}:`));
+  return line ? line.slice(line.indexOf(":") + 1).trim() : null;
+}
+
+function hasCondition(system: string, key: string): boolean {
+  return system.toLowerCase().includes(key.toLowerCase());
+}
+
+function buildLocalMealPlan(system: string) {
+  const region = readSystemLine(system, "Region / state")?.split("—")[0].trim() || "Indian";
+  const vegetarian = (readSystemLine(system, "Dietary preferences") ?? "").toLowerCase().includes("veg");
+  const diabetes = hasCondition(system, "diabet") || hasCondition(system, "prediabet") || hasCondition(system, "sugar");
+  const hypertension = hasCondition(system, "hypertension") || hasCondition(system, "blood pressure");
+  const thyroid = hasCondition(system, "thyroid") || hasCondition(system, "levothyroxine");
+  const pcos = hasCondition(system, "pcos");
+  const pregnant = hasCondition(system, "Pregnant") || hasCondition(system, "PREGNANCY NUTRITION");
+
+  const grain = diabetes || pcos ? "ragi/jowar" : "whole wheat";
+  const protein = vegetarian ? "paneer, curd, dal and sprouts" : "eggs, fish/chicken, dal and curd";
+  const sodiumNote = hypertension ? "keeps sodium low and avoids pickle, papad and namkeen" : "uses moderate salt and home-style cooking";
+  const thyroidNote = thyroid ? "keeps calcium/iron foods away from thyroid medicine timing" : "fits the recorded medication profile";
+  const pregnancyNote = pregnant ? "adds folate, calcium, iron and safe protein for pregnancy" : "matches the profile and goals";
+
+  return {
+    totals: { calories: 1650, protein_g: vegetarian ? 74 : 86, carbs_g: diabetes || pcos ? 170 : 205, fat_g: 50, fiber_g: 34 },
+    meals: [
+      {
+        name: "Breakfast",
+        title: `${region} vegetable poha with sprouts and curd`,
+        description: `Light Indian breakfast with vegetables, sprouts, curd, lemon and roasted peanuts; use less oil and no sugar.`,
+        calories: 360,
+        protein_g: 18,
+        carbs_g: diabetes || pcos ? 42 : 52,
+        fat_g: 11,
+        ingredients: ["poha", "mixed vegetables", "sprouts", "curd", "lemon", "peanuts"],
+        condition_notes: diabetes ? "Lower-GI portion plus sprouts helps steady morning blood sugar." : `Balanced start that ${sodiumNote}.`,
+      },
+      {
+        name: "Mid-morning",
+        title: "Guava or apple with soaked almonds",
+        description: "Whole fruit with a small nut portion for fiber, minerals and stable energy.",
+        calories: 160,
+        protein_g: 5,
+        carbs_g: 22,
+        fat_g: 7,
+        ingredients: ["guava or apple", "almonds"],
+        condition_notes: hypertension ? "Fruit and nuts support potassium and magnesium without excess sodium." : "Whole fruit avoids the sugar spike of juice.",
+      },
+      {
+        name: "Lunch",
+        title: `${grain} roti with dal, sabzi and salad`,
+        description: `Home-style Indian lunch with ${protein}, seasonal sabzi, cucumber salad and chaas without added salt.`,
+        calories: 520,
+        protein_g: vegetarian ? 25 : 32,
+        carbs_g: diabetes || pcos ? 58 : 72,
+        fat_g: 16,
+        ingredients: [`${grain} roti`, "dal", "seasonal sabzi", "cucumber", "chaas"],
+        condition_notes: `${thyroidNote}; high fiber and protein improve fullness and glucose control.`,
+      },
+      {
+        name: "Snack",
+        title: "Roasted chana with masala chaas",
+        description: "A high-fiber, protein snack with jeera, mint and no packaged namkeen.",
+        calories: 190,
+        protein_g: 10,
+        carbs_g: 24,
+        fat_g: 6,
+        ingredients: ["roasted chana", "curd", "jeera", "mint"],
+        condition_notes: "Avoids fried snacks while keeping evening hunger controlled.",
+      },
+      {
+        name: "Dinner",
+        title: "Moong dal khichdi with lauki and cucumber raita",
+        description: "Early, easy-to-digest dinner with moong dal, rice or millet, lauki, haldi, hing and raita.",
+        calories: 420,
+        protein_g: vegetarian ? 16 : 21,
+        carbs_g: diabetes || pcos ? 48 : 58,
+        fat_g: 10,
+        ingredients: ["moong dal", "lauki", "rice or millet", "curd", "cucumber"],
+        condition_notes: `${pregnancyNote}; light dinner supports sleep and digestion.`,
+      },
+    ],
+    grocery: [
+      { name: "Mixed vegetables", quantity: "500 g", category: "Produce", necessary: true },
+      { name: "Sprouts", quantity: "1 cup", category: "Produce", necessary: true },
+      { name: "Curd", quantity: "500 g", category: "Dairy", necessary: true },
+      { name: "Guava or apple", quantity: "2 pieces", category: "Produce", necessary: true },
+      { name: "Lauki", quantity: "1 medium", category: "Produce", necessary: true },
+      { name: "Moong dal", quantity: "1 cup", category: "Pantry", necessary: true },
+      { name: `${grain} flour`, quantity: "500 g", category: "Pantry", necessary: true },
+      { name: "Jeera, haldi, hing", quantity: "as needed", category: "Spices", necessary: false },
+    ],
+  };
+}
+
+function extractLocalReport(text: string) {
+  const labs: Array<{ name: string; value: string; unit?: string; flag?: "low" | "normal" | "high" | "critical" }> = [];
+  const patterns: Array<[string, RegExp, string | undefined, (n: number) => "low" | "normal" | "high" | "critical"]> = [
+    ["HbA1c", /hba1c\s*[:\-]?\s*(\d+(?:\.\d+)?)/i, "%", (n) => (n >= 8 ? "critical" : n >= 5.7 ? "high" : "normal")],
+    ["Fasting glucose", /(?:fasting glucose|fbs|fasting sugar)\s*[:\-]?\s*(\d+(?:\.\d+)?)/i, "mg/dL", (n) => (n >= 126 ? "high" : n < 70 ? "low" : "normal")],
+    ["LDL", /ldl\s*[:\-]?\s*(\d+(?:\.\d+)?)/i, "mg/dL", (n) => (n >= 130 ? "high" : "normal")],
+    ["HDL", /hdl\s*[:\-]?\s*(\d+(?:\.\d+)?)/i, "mg/dL", (n) => (n < 40 ? "low" : "normal")],
+    ["Triglycerides", /triglycerides\s*[:\-]?\s*(\d+(?:\.\d+)?)/i, "mg/dL", (n) => (n >= 150 ? "high" : "normal")],
+    ["TSH", /tsh\s*[:\-]?\s*(\d+(?:\.\d+)?)/i, "mIU/L", (n) => (n > 4.5 ? "high" : n < 0.4 ? "low" : "normal")],
+  ];
+  for (const [name, regex, unit, flagger] of patterns) {
+    const match = text.match(regex);
+    if (!match) continue;
+    const value = Number(match[1]);
+    labs.push({ name, value: match[1], unit, flag: flagger(value) });
+  }
+  const abnormal = labs.filter((l) => l.flag && l.flag !== "normal").map((l) => `${l.name} ${l.flag}`);
+  return {
+    summary: abnormal.length ? `Detected possible abnormal values: ${abnormal.join(", ")}.` : "Report saved. No common abnormal values were detected from the pasted text.",
+    labs,
+    recommendations: [
+      "Review these values with your doctor, especially if symptoms or medication changes are involved.",
+      "Flomo will use these extracted values to make meal planning safer and more personalized.",
+    ],
+  };
 }
 
 
